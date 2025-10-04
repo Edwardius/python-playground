@@ -7,7 +7,11 @@ pip install -r requirements.txt
 
 ## Usage
 
-### 1. Add control input to data
+### 1. Add control input to data\
+Not needed if the data already has control data.
+
+These scripts accept `timestamp, reading, control_input` in a row of a .txt file.
+
 ```bash
 python add_control_input.py 0_to_20.txt
 ```
