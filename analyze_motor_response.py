@@ -12,21 +12,31 @@ def load_data(filename, start_ms, end_ms):
     times = []
     angles = []
     controls = []
-    
+
     with open(filename, 'r') as file:
-        for line in file:
+        for line_num, line in enumerate(file, 1):
             if line.strip():
                 parts = line.strip().split(',')
-                time_ms = float(parts[0])
-                
-                if start_ms <= time_ms <= end_ms:
+
+                # Skip lines that don't have at least 2 values (time and angle)
+                if len(parts) < 2:
+                    continue
+
+                try:
+                    time_ms = float(parts[0])
                     angle_mrad = float(parts[1])
-                    control_mrad = float(parts[2]) if len(parts) > 2 else 0.0
-                    
-                    times.append(time_ms)
-                    angles.append(angle_mrad)
-                    controls.append(control_mrad)
-    
+
+                    if start_ms <= time_ms <= end_ms:
+                        control_mrad = float(parts[2]) if len(parts) > 2 else 0.0
+
+                        times.append(time_ms)
+                        angles.append(angle_mrad)
+                        controls.append(control_mrad)
+                except ValueError:
+                    # Skip lines with invalid numeric data
+                    print(f"Warning: Skipping line {line_num} with invalid data: {line.strip()}")
+                    continue
+
     return np.array(times), np.array(angles), np.array(controls)
 
 def find_control_edges(times, controls):
@@ -183,12 +193,12 @@ def main():
         print("No data found in the specified time range")
         sys.exit(1)
     
-    # Apply rolling median filter (window size 5)
-    median_window = 5
+    # Apply rolling median filter (window size 3 for minimal filtering)
+    median_window = 3
     angles_median = medfilt(angles, median_window)
-    
+
     # Apply moving average (Savitzky-Golay filter for smoothing)
-    # Using larger window for more smoothing
+    # Using smaller window for less aggressive smoothing
     window_length = min(51, len(angles_median) if len(angles_median) % 2 == 1 else len(angles_median) - 1)
     angles_smooth = savgol_filter(angles_median, window_length=window_length, polyorder=3)
     
@@ -289,8 +299,11 @@ def main():
                 fig.canvas.draw_idle()
         
         fig.canvas.mpl_connect('scroll_event', on_scroll)
-        
-        plt.show()
+
+        # Save the figure instead of showing it
+        output_filename = f"motor_response_{args.start}_{args.end}_ms.png"
+        plt.savefig(output_filename, dpi=150, bbox_inches='tight')
+        print(f"\nPlot saved to: {output_filename}")
 
 if __name__ == "__main__":
     main()

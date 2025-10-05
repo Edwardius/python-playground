@@ -11,25 +11,35 @@ def process_and_plot(filename):
     angles = []
     controls = []
     has_control = False
-    
+
     with open(filename, 'r') as file:
-        for line in file:
+        for line_num, line in enumerate(file, 1):
             if line.strip():
                 parts = line.strip().split(',')
-                time_ms = float(parts[0])
-                angle_mrad = float(parts[1])
-                
-                time_s = time_ms / 1000.0
-                angle_rad = angle_mrad / 1000.0
-                
-                times.append(time_s)
-                angles.append(angle_rad)
-                
-                if len(parts) > 2:
-                    has_control = True
-                    control_mrad = float(parts[2])
-                    control_rad = control_mrad / 1000.0
-                    controls.append(control_rad)
+
+                # Skip lines that don't have at least 2 values (time and angle)
+                if len(parts) < 2:
+                    continue
+
+                try:
+                    time_ms = float(parts[0])
+                    angle_mrad = float(parts[1])
+
+                    time_s = time_ms / 1000.0
+                    angle_rad = angle_mrad / 1000.0
+
+                    times.append(time_s)
+                    angles.append(angle_rad)
+
+                    if len(parts) > 2:
+                        has_control = True
+                        control_mrad = float(parts[2])
+                        control_rad = control_mrad / 1000.0
+                        controls.append(control_rad)
+                except ValueError:
+                    # Skip lines with invalid numeric data
+                    print(f"Warning: Skipping line {line_num} with invalid data: {line.strip()}")
+                    continue
     
     times = np.array(times)
     angles = np.array(angles)
